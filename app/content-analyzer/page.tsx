@@ -15,7 +15,15 @@ import {
   IconBook,
   IconExternalLink,
   IconFileCode,
-  IconSettings
+  IconSettings,
+  IconBolt,
+  IconTag,
+  IconClipboard,
+  IconChartBar,
+  IconBrandPython,
+  IconKey,
+  IconAlertTriangle,
+  IconInbox
 } from "@tabler/icons-react"
 import { runSeoAudit, generateProgrammaticReport, type AuditResults } from "@/lib/seo-analyzer"
 
@@ -163,7 +171,7 @@ export default function ContentAnalyzerPage() {
             <IconArrowLeft className="size-3.5" /> Back to Dashboard
           </Link>
           <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            ⚡ SEO Content Analyzer
+            <IconBolt className="size-6 text-amber-500 fill-amber-500" /> SEO Content Analyzer
           </h2>
           <p className="text-xs text-muted-foreground">
             Runs Flesch Reading Ease calculations and validates headings, images, and anchors programmatically.
@@ -197,7 +205,7 @@ export default function ContentAnalyzerPage() {
         {/* HTML Paste Box */}
         <div className="lg:col-span-2 flex flex-col space-y-2">
           <label className="text-xs font-bold text-foreground tracking-wide uppercase block">
-            📥 Paste Webpage HTML Code:
+            Paste Webpage HTML Code:
           </label>
           
           <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col h-full">
@@ -233,8 +241,8 @@ export default function ContentAnalyzerPage() {
 
               {/* Target Keywords Input */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground block">
-                  🏷️ Target Keywords
+                <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                  <IconTag className="size-3.5" /> Target Keywords
                 </label>
                 <textarea
                   value={keywordsRaw}
@@ -249,8 +257,8 @@ export default function ContentAnalyzerPage() {
 
               {/* H2 Class Input */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground block">
-                  📋 H2 Centering CSS Class
+                <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                  <IconClipboard className="size-3.5" /> H2 Centering CSS Class
                 </label>
                 <input
                   type="text"
@@ -292,7 +300,7 @@ export default function ContentAnalyzerPage() {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              📊 Summary Dashboard
+              <span className="flex items-center gap-1.5"><IconChartBar className="size-4" /> Summary Dashboard</span>
             </button>
             <button
               onClick={() => setActiveTab("python-report")}
@@ -302,7 +310,7 @@ export default function ContentAnalyzerPage() {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              🐍 Python Programmatic Audit
+              <span className="flex items-center gap-1.5"><IconBrandPython className="size-4" /> Python Programmatic Audit</span>
             </button>
           </div>
 
@@ -366,7 +374,7 @@ export default function ContentAnalyzerPage() {
                 <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-sm flex flex-col justify-between">
                   <div>
                     <h3 className="text-sm font-bold tracking-tight text-foreground border-b border-border pb-2 flex items-center justify-between">
-                      <span>🔑 Target Keyword Density</span>
+                      <span className="flex items-center gap-1.5"><IconKey className="size-4 text-sky-500" /> Target Keyword Density</span>
                       <span className="text-[10px] bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
                         {keywordsList.length} defined
                       </span>
@@ -431,8 +439,8 @@ export default function ContentAnalyzerPage() {
 
                 {/* Audit Checklist Flags */}
                 <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-sm">
-                  <h3 className="text-sm font-bold tracking-tight text-foreground border-b border-border pb-2">
-                    ⚠️ Key Audit Checklist Flags
+                  <h3 className="text-sm font-bold tracking-tight text-foreground border-b border-border pb-2 flex items-center gap-1.5">
+                    <IconAlertTriangle className="size-4 text-sky-500" /> Key Audit Checklist Flags
                   </h3>
 
                   <div className="space-y-3.5 mt-3 text-xs md:text-sm">
@@ -752,12 +760,14 @@ export default function ContentAnalyzerPage() {
 
         </div>
       ) : (
-        <div className="bg-card border border-border rounded-xl p-10 text-center text-muted-foreground space-y-2 shadow-sm animate-in fade-in-50 duration-300">
-          <span className="text-4xl">📥</span>
-          <h4 className="text-sm font-bold text-foreground tracking-tight">Waiting for Analysis...</h4>
-          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            Paste your blog post's HTML in the editor box above and click the "Run Analysis" button to view compliance metrics.
-          </p>
+        <div className="bg-card border border-border rounded-xl p-10 text-center text-muted-foreground space-y-4 shadow-sm animate-in fade-in-50 duration-300 flex flex-col items-center justify-center">
+          <IconInbox className="size-10 text-muted-foreground/60" />
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-foreground tracking-tight">Waiting for Analysis...</h4>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Paste your blog post's HTML in the editor box above and click the "Run Analysis" button to view compliance metrics.
+            </p>
+          </div>
         </div>
       )}
 

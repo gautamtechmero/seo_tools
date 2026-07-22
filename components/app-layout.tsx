@@ -11,7 +11,8 @@ import {
   IconFileCode,
   IconTerminal,
   IconSun,
-  IconMoon
+  IconMoon,
+  IconKeyboard
 } from "@tabler/icons-react"
 
 interface NavItem {
@@ -136,8 +137,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="space-y-4">
           {/* Keyboard Shortcuts Helper */}
           <div className="border-t border-border/60 pt-4 px-2 space-y-2">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
-              ⌨️ Keyboard Shortcuts
+            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1.5">
+              <IconKeyboard className="size-3.5" /> Keyboard Shortcuts
             </span>
             <div className="grid grid-cols-2 gap-1.5 text-[9px] text-muted-foreground font-mono">
               <div className="flex items-center justify-between bg-muted/40 px-2.5 py-1 rounded">
