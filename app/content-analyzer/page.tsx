@@ -92,6 +92,63 @@ export default function ContentAnalyzerPage() {
     );
   }, [auditResults, imageFilter]);
 
+  // Keyboard Shortcuts Hook
+  React.useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // 1. Run Analysis: Cmd+Enter or Ctrl+Enter (always allowed, even inside textarea)
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleAnalyze();
+      }
+
+      // Check if user is typing in an input element
+      const target = e.target;
+      const isTyping = target instanceof HTMLElement && (
+        target.isContentEditable ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT"
+      );
+
+      // Keyboard shortcuts allowed only when NOT typing in an input (except for Cmd+Enter)
+      if (!isTyping) {
+        // 2. Switch to Tab 1: Alt + 1
+        if (e.altKey && e.key === "1") {
+          e.preventDefault();
+          setActiveTab("summary");
+          toast.info("Switched to Summary Dashboard");
+        }
+        // 3. Switch to Tab 2: Alt + 2
+        if (e.altKey && e.key === "2") {
+          e.preventDefault();
+          setActiveTab("python-report");
+          toast.info("Switched to Programmatic Report");
+        }
+        // 4. Copy Report: Alt + C or Cmd + Shift + C (if results exist)
+        if (auditResults && (
+          (e.altKey && e.key.toLowerCase() === "c") ||
+          ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "c")
+        )) {
+          e.preventDefault();
+          const report = generateProgrammaticReport(auditResults, centerClass);
+          navigator.clipboard.writeText(report);
+          toast.success("Audit report copied to clipboard!");
+        }
+        // 5. Clear Work: Alt + Backspace or Alt + X
+        if (e.altKey && (e.key === "Backspace" || e.key.toLowerCase() === "x")) {
+          e.preventDefault();
+          setHtmlInput("");
+          setKeywordsRaw("");
+          setAuditResults(null);
+          toast.info("Workspace cleared.");
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [htmlInput, keywordsRaw, centerClass, auditResults]);
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in-50 duration-300">
       <Toaster position="top-right" />
@@ -214,6 +271,35 @@ export default function ContentAnalyzerPage() {
               <div className="text-[11px] text-muted-foreground leading-normal">
                 <span className="font-bold text-foreground block">Flesch Readability</span>
                 Measures paragraph grade ease. Target score is 60+ (Standard English).
+              </div>
+            </div>
+
+            {/* Keyboard Shortcuts Helper */}
+            <div className="border-t border-border/60 pt-4 mt-2">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">
+                ⌨️ Keyboard Shortcuts
+              </span>
+              <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground font-mono">
+                <div className="flex items-center justify-between bg-muted/30 px-2 py-1 rounded">
+                  <span>Run Audit</span>
+                  <kbd className="px-1 bg-muted border border-border rounded text-[9px] font-bold">⌘↵</kbd>
+                </div>
+                <div className="flex items-center justify-between bg-muted/30 px-2 py-1 rounded">
+                  <span>Clear</span>
+                  <kbd className="px-1 bg-muted border border-border rounded text-[9px] font-bold">⌥⌫</kbd>
+                </div>
+                <div className="flex items-center justify-between bg-muted/30 px-2 py-1 rounded">
+                  <span>Tab 1</span>
+                  <kbd className="px-1 bg-muted border border-border rounded text-[9px] font-bold">⌥1</kbd>
+                </div>
+                <div className="flex items-center justify-between bg-muted/30 px-2 py-1 rounded">
+                  <span>Tab 2</span>
+                  <kbd className="px-1 bg-muted border border-border rounded text-[9px] font-bold">⌥2</kbd>
+                </div>
+                <div className="flex items-center justify-between bg-muted/30 px-2 py-1 rounded col-span-2">
+                  <span>Copy Report</span>
+                  <kbd className="px-1 bg-muted border border-border rounded text-[9px] font-bold">⌥C / ⌘⇧C</kbd>
+                </div>
               </div>
             </div>
           </div>
