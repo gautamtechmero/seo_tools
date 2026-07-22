@@ -134,6 +134,35 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Footer */}
         <div className="space-y-4">
+          {/* Keyboard Shortcuts Helper */}
+          <div className="border-t border-border/60 pt-4 px-2 space-y-2">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">
+              ⌨️ Keyboard Shortcuts
+            </span>
+            <div className="grid grid-cols-2 gap-1.5 text-[9px] text-muted-foreground font-mono">
+              <div className="flex items-center justify-between bg-muted/40 px-2.5 py-1 rounded">
+                <span>Run Audit</span>
+                <kbd className="px-1 bg-muted border border-border rounded text-[8px] font-bold">⌘↵</kbd>
+              </div>
+              <div className="flex items-center justify-between bg-muted/40 px-2.5 py-1 rounded">
+                <span>Clear</span>
+                <kbd className="px-1 bg-muted border border-border rounded text-[8px] font-bold">⌥⌫</kbd>
+              </div>
+              <div className="flex items-center justify-between bg-muted/40 px-2.5 py-1 rounded">
+                <span>Tab 1</span>
+                <kbd className="px-1 bg-muted border border-border rounded text-[8px] font-bold">⌥1</kbd>
+              </div>
+              <div className="flex items-center justify-between bg-muted/40 px-2.5 py-1 rounded">
+                <span>Tab 2</span>
+                <kbd className="px-1 bg-muted border border-border rounded text-[8px] font-bold">⌥2</kbd>
+              </div>
+              <div className="flex items-center justify-between bg-muted/40 px-2.5 py-1 rounded col-span-2">
+                <span>Copy Report</span>
+                <kbd className="px-1 bg-muted border border-border rounded text-[8px] font-bold">⌥C / ⌘⇧C</kbd>
+              </div>
+            </div>
+          </div>
+
           <div className="border-t border-border pt-4 px-2">
             <div className="flex items-center justify-between">
               <div className="text-xs text-muted-foreground">

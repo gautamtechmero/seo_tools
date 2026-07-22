@@ -274,34 +274,6 @@ export default function ContentAnalyzerPage() {
               </div>
             </div>
 
-            {/* Keyboard Shortcuts Helper */}
-            <div className="border-t border-border/60 pt-4 mt-2">
-              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">
-                ⌨️ Keyboard Shortcuts
-              </span>
-              <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground font-mono">
-                <div className="flex items-center justify-between bg-muted/30 px-2 py-1 rounded">
-                  <span>Run Audit</span>
-                  <kbd className="px-1 bg-muted border border-border rounded text-[9px] font-bold">⌘↵</kbd>
-                </div>
-                <div className="flex items-center justify-between bg-muted/30 px-2 py-1 rounded">
-                  <span>Clear</span>
-                  <kbd className="px-1 bg-muted border border-border rounded text-[9px] font-bold">⌥⌫</kbd>
-                </div>
-                <div className="flex items-center justify-between bg-muted/30 px-2 py-1 rounded">
-                  <span>Tab 1</span>
-                  <kbd className="px-1 bg-muted border border-border rounded text-[9px] font-bold">⌥1</kbd>
-                </div>
-                <div className="flex items-center justify-between bg-muted/30 px-2 py-1 rounded">
-                  <span>Tab 2</span>
-                  <kbd className="px-1 bg-muted border border-border rounded text-[9px] font-bold">⌥2</kbd>
-                </div>
-                <div className="flex items-center justify-between bg-muted/30 px-2 py-1 rounded col-span-2">
-                  <span>Copy Report</span>
-                  <kbd className="px-1 bg-muted border border-border rounded text-[9px] font-bold">⌥C / ⌘⇧C</kbd>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
