@@ -13,7 +13,9 @@ import {
   IconCircleCheck,
   IconCircleX,
   IconBook,
-  IconExternalLink
+  IconExternalLink,
+  IconFileCode,
+  IconSettings
 } from "@tabler/icons-react"
 import { runSeoAudit, generateProgrammaticReport, type AuditResults } from "@/lib/seo-analyzer"
 
@@ -111,7 +113,7 @@ export default function ContentAnalyzerPage() {
           </p>
         </div>
         
-        <div className="flex items-center gap-2 sm:self-end">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => {
               setHtmlInput("");
@@ -127,7 +129,7 @@ export default function ContentAnalyzerPage() {
             onClick={handleAnalyze}
             className="px-4 py-1.5 text-xs font-bold bg-sky-500 hover:bg-sky-600 text-white rounded-lg shadow-sm shadow-sky-500/10 transition-colors"
           >
-            🔍 Run Analysis
+            Run Analysis
           </button>
         </div>
       </div>
@@ -136,69 +138,82 @@ export default function ContentAnalyzerPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* HTML Paste Box */}
-        <div className="lg:col-span-2 space-y-2">
+        <div className="lg:col-span-2 flex flex-col space-y-2">
           <label className="text-xs font-bold text-foreground tracking-wide uppercase block">
-            📥 Paste Webpage HTML Code Here:
+            📥 Paste Webpage HTML Code:
           </label>
-          <textarea
-            value={htmlInput}
-            onChange={(e) => setHtmlInput(e.target.value)}
-            placeholder="<html>
+          
+          <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col h-full">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/20">
+              <span className="text-[10px] font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                <IconFileCode className="size-4 text-sky-500" /> HTML Source Editor
+              </span>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {htmlInput.length} chars
+              </span>
+            </div>
+            <textarea
+              value={htmlInput}
+              onChange={(e) => setHtmlInput(e.target.value)}
+              placeholder="<html>
 <body>
   <h1>Interactive SEO Blog Post</h1>
   <p>Paste the full HTML markup here to audit...</p>
 </body>
 </html>"
-            className="w-full h-80 rounded-xl border border-border bg-card p-4 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500 resize-none transition-shadow"
-          />
+              className="w-full h-80 lg:h-[350px] border-0 bg-transparent p-4 text-xs font-mono focus:outline-none resize-none leading-relaxed"
+            />
+          </div>
         </div>
 
         {/* Settings Column */}
         <div className="space-y-4">
-          <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-sm">
-            <h3 className="text-sm font-bold tracking-tight border-b border-border pb-2 text-foreground">
-              ⚙️ Audit Parameters
-            </h3>
+          <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-sm h-full flex flex-col justify-between">
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold tracking-tight border-b border-border pb-2 text-foreground flex items-center gap-1.5 uppercase">
+                <IconSettings className="size-4 text-sky-500" /> Audit Settings
+              </h3>
 
-            {/* Target Keywords Input */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground block">
-                🏷️ Target Keywords
-              </label>
-              <textarea
-                value={keywordsRaw}
-                onChange={(e) => setKeywordsRaw(e.target.value)}
-                placeholder="e.g. SEO tools, readability, audit"
-                className="w-full h-24 rounded-lg border border-border bg-background p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500 resize-none"
-              />
-              <span className="text-[10px] text-muted-foreground leading-tight block">
-                Enter keywords separated by commas or lines.
-              </span>
-            </div>
+              {/* Target Keywords Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground block">
+                  🏷️ Target Keywords
+                </label>
+                <textarea
+                  value={keywordsRaw}
+                  onChange={(e) => setKeywordsRaw(e.target.value)}
+                  placeholder="e.g. SEO tools, readability, audit"
+                  className="w-full h-24 rounded-lg border border-border bg-background p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500 resize-none"
+                />
+                <span className="text-[10px] text-muted-foreground leading-tight block">
+                  Enter keywords separated by commas or lines.
+                </span>
+              </div>
 
-            {/* H2 Class Input */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground block">
-                📋 H2 Centering CSS Class
-              </label>
-              <input
-                type="text"
-                value={centerClass}
-                onChange={(e) => setCenterClass(e.target.value)}
-                placeholder="has-text-align-center"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
-              />
-              <span className="text-[10px] text-muted-foreground leading-tight block">
-                Checks if H2s contain this class (standard for WordPress blocks).
-              </span>
+              {/* H2 Class Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground block">
+                  📋 H2 Centering CSS Class
+                </label>
+                <input
+                  type="text"
+                  value={centerClass}
+                  onChange={(e) => setCenterClass(e.target.value)}
+                  placeholder="has-text-align-center"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500"
+                />
+                <span className="text-[10px] text-muted-foreground leading-tight block">
+                  Defaults to WP block editor class.
+                </span>
+              </div>
             </div>
 
             {/* Quick Helper Tip */}
-            <div className="rounded-lg bg-sky-500/5 border border-sky-500/10 p-3 flex items-start gap-2.5">
-              <IconBook className="size-4.5 text-sky-500 shrink-0 mt-0.5" />
+            <div className="rounded-lg bg-sky-500/5 border border-sky-500/10 p-3 flex items-start gap-2.5 mt-4">
+              <IconBook className="size-5 text-sky-500 shrink-0" />
               <div className="text-[11px] text-muted-foreground leading-normal">
-                <span className="font-bold text-foreground block">Yoast grading algorithm</span>
-                The analyzer tests grade difficulty based on English text metrics. Recommended score is 60+ (Standard).
+                <span className="font-bold text-foreground block">Flesch Readability</span>
+                Measures paragraph grade ease. Target score is 60+ (Standard English).
               </div>
             </div>
           </div>
@@ -238,7 +253,7 @@ export default function ContentAnalyzerPage() {
             <div className="space-y-6">
               
               {/* Metric Badges */}
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                 {[
                   { label: "Word Count", value: auditResults.totalWords, color: "text-foreground" },
                   { 
@@ -454,13 +469,13 @@ export default function ContentAnalyzerPage() {
                   🔍 Extracted Page Elements Detail
                 </h3>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   
                   {/* HEADINGS DETAIL */}
                   <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-4 flex flex-col justify-between h-[450px]">
                     <div className="space-y-3 flex-1 overflow-hidden flex flex-col">
                       <div className="flex items-center justify-between border-b border-border pb-2">
-                        <h4 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-1.5">
+                        <h4 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-1.5 font-sans">
                           <IconBook className="size-4 text-sky-500" /> H2 Headings ({auditResults.headings.all.length})
                         </h4>
                         <span className="text-[10px] text-muted-foreground font-mono">
@@ -515,7 +530,7 @@ export default function ContentAnalyzerPage() {
                   <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-4 flex flex-col justify-between h-[450px]">
                     <div className="space-y-3 flex-1 overflow-hidden flex flex-col">
                       <div className="flex items-center justify-between border-b border-border pb-2">
-                        <h4 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-1.5">
+                        <h4 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-1.5 font-sans">
                           <IconLink className="size-4 text-sky-500" /> Links & Anchor Texts ({auditResults.links.all.length})
                         </h4>
                         <span className="text-[10px] text-muted-foreground font-mono">
@@ -545,9 +560,9 @@ export default function ContentAnalyzerPage() {
                                 href={link.href}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sky-500 hover:underline flex items-center gap-1 text-[10px] font-mono truncate"
+                                className="text-sky-500 hover:underline flex items-center gap-1 text-[10px] font-mono break-all leading-normal"
                               >
-                                URL: {link.href} <IconExternalLink className="size-2.5 shrink-0" />
+                                URL: {link.href} <IconExternalLink className="size-2.5 shrink-0 inline" />
                               </a>
                               <div className="flex items-center justify-between text-[10px] pt-1">
                                 <span className={`px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
@@ -575,10 +590,10 @@ export default function ContentAnalyzerPage() {
                   </div>
 
                   {/* IMAGES DETAIL */}
-                  <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-4 flex flex-col justify-between h-[450px]">
+                  <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-4 flex flex-col justify-between h-[450px] md:col-span-2 lg:col-span-1">
                     <div className="space-y-3 flex-1 overflow-hidden flex flex-col">
                       <div className="flex items-center justify-between border-b border-border pb-2">
-                        <h4 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-1.5">
+                        <h4 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-1.5 font-sans">
                           <IconPhoto className="size-4 text-sky-500" /> Images Alt/Title ({auditResults.images.all.length})
                         </h4>
                         <span className="text-[10px] text-muted-foreground font-mono">
@@ -607,20 +622,20 @@ export default function ContentAnalyzerPage() {
                               
                               <div className="space-y-1 text-[11px] border-t border-border/20 pt-1.5">
                                 <div className="flex items-start gap-1 justify-between">
-                                  <span className="text-muted-foreground">Alt:</span>
-                                  <span className={`font-mono truncate max-w-[150px] ${img.hasAlt ? "text-foreground font-semibold" : "text-rose-500 font-bold"}`}>
+                                  <span className="text-muted-foreground shrink-0">Alt:</span>
+                                  <span className={`font-mono text-right break-all ml-4 ${img.hasAlt ? "text-foreground font-semibold" : "text-rose-500 font-bold"}`}>
                                     {img.alt}
                                   </span>
                                 </div>
                                 <div className="flex items-start gap-1 justify-between">
-                                  <span className="text-muted-foreground">Title:</span>
-                                  <span className={`font-mono truncate max-w-[150px] ${img.hasTitle ? "text-foreground font-semibold" : "text-rose-500 font-bold"}`}>
+                                  <span className="text-muted-foreground shrink-0">Title:</span>
+                                  <span className={`font-mono text-right break-all ml-4 ${img.hasTitle ? "text-foreground font-semibold" : "text-rose-500 font-bold"}`}>
                                     {img.title}
                                   </span>
                                 </div>
                               </div>
 
-                              <div className="flex gap-1.5 pt-1">
+                              <div className="flex flex-wrap gap-1.5 pt-1">
                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
                                   img.hasAlt ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
                                 }`}>
@@ -655,7 +670,7 @@ export default function ContentAnalyzerPage() {
               
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <div>
-                  <h3 className="text-sm font-bold tracking-tight text-foreground">
+                  <h3 className="text-sm font-bold tracking-tight text-foreground font-sans">
                     📄 Programmatic Audit Output
                   </h3>
                   <p className="text-[11px] text-muted-foreground">
@@ -664,7 +679,7 @@ export default function ContentAnalyzerPage() {
                 </div>
                 <button
                   onClick={() => handleCopyReport(generateProgrammaticReport(auditResults, centerClass))}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors shadow-sm shadow-sky-500/10"
                 >
                   <IconCopy className="size-3.5" /> Copy Report
                 </button>
