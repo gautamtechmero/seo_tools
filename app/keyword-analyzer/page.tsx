@@ -15,9 +15,9 @@ import {
   IconCircleCheck,
   IconCircleX,
   IconSparkles,
-  IconRefresh,
   IconEye,
-  IconListCheck
+  IconListCheck,
+  IconFilter
 } from "@tabler/icons-react"
 
 interface KeywordStat {
@@ -37,6 +37,7 @@ export default function KeywordAnalyzerPage() {
   // Analysis Options
   const [caseSensitive, setCaseSensitive] = useState<boolean>(false)
   const [wholeWordMatch, setWholeWordMatch] = useState<boolean>(true)
+  const [flexiblePlural, setFlexiblePlural] = useState<boolean>(true)
   
   // Filter for Keyword Results Table
   const [tableFilter, setTableFilter] = useState<string>("")
@@ -45,24 +46,32 @@ export default function KeywordAnalyzerPage() {
   const [copiedMissing, setCopiedMissing] = useState<boolean>(false)
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false)
 
-  // Parse raw keywords input into distinct array
+  // Parse & sanitize raw keywords input into clean distinct array
   const targetKeywords = useMemo(() => {
     if (!semanticKeywordsRaw.trim()) return []
-    const list = semanticKeywordsRaw
-      .split(/[\n,]/)
-      .map((k) => k.trim())
+    const lines = semanticKeywordsRaw.split(/[\n,;]/)
+    const cleaned = lines
+      .map((line) => {
+        let item = line.trim()
+        // Strip leading bullets, numbers, dashes, dots, or list prefixes like "1. ", "- ", "• ", "* "
+        item = item.replace(/^[•\-\*\d+\.\s"']+\s*/, "")
+        // Strip leftover surrounding quote marks
+        item = item.replace(/^["']|["']$/g, "").trim()
+        return item
+      })
       .filter((k) => k.length > 0)
-    // Remove duplicates while keeping case if needed
-    return Array.from(new Set(list))
+    
+    // Deduplicate list
+    return Array.from(new Set(cleaned))
   }, [semanticKeywordsRaw])
 
-  // Total Content Word Count
+  // Total Content Word Count (Normalized)
   const totalContentWords = useMemo(() => {
     if (!content.trim()) return 0
     return content.trim().split(/\s+/).length
   }, [content])
 
-  // Perform Analysis
+  // Perform Smart Analysis
   const analysisResults = useMemo(() => {
     if (!content.trim() || targetKeywords.length === 0) {
       return {
@@ -75,7 +84,8 @@ export default function KeywordAnalyzerPage() {
       }
     }
 
-    const textToSearch = caseSensitive ? content : content.toLowerCase()
+    // Normalize text content whitespace (convert multi-spaces/newlines to single space for matching)
+    const normalizedContent = content.replace(/\s+/g, " ")
 
     let foundCount = 0
     let missingCount = 0
@@ -83,24 +93,25 @@ export default function KeywordAnalyzerPage() {
     const foundList: string[] = []
 
     const keywordStats: KeywordStat[] = targetKeywords.map((kw) => {
-      const searchTerm = caseSensitive ? kw : kw.toLowerCase()
-
-      let occurrences = 0
-      if (wholeWordMatch) {
-        // Escape special regex characters in keyword
-        const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-        // Word boundary regex matching
-        const regex = new RegExp(`\\b${escaped}\\b`, caseSensitive ? "g" : "gi")
-        const matches = content.match(regex)
-        occurrences = matches ? matches.length : 0
-      } else {
-        // Partial string matching count
-        let pos = 0
-        while ((pos = textToSearch.indexOf(searchTerm, pos)) !== -1) {
-          occurrences++
-          pos += searchTerm.length
-        }
+      const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      
+      let pattern = escaped
+      if (flexiblePlural) {
+        // Allow optional trailing 's' or 'es' for singular/plural matching
+        pattern = `${escaped}(?:s|es)?`
       }
+
+      let regex: RegExp
+      if (wholeWordMatch) {
+        // Robust boundary matching: lookbehind and lookahead to handle punctuation, hyphens, and multi-word phrases safely
+        const flags = caseSensitive ? "g" : "gi"
+        regex = new RegExp(`(?:^|[^a-zA-Z0-9_])(${pattern})(?=[^a-zA-Z0-9_]|$)`, flags)
+      } else {
+        regex = new RegExp(pattern, caseSensitive ? "g" : "gi")
+      }
+
+      const matches = normalizedContent.match(regex)
+      const occurrences = matches ? matches.length : 0
 
       const isFound = occurrences > 0
       if (isFound) {
@@ -131,7 +142,7 @@ export default function KeywordAnalyzerPage() {
       missingList,
       foundList
     }
-  }, [content, targetKeywords, caseSensitive, wholeWordMatch, totalContentWords])
+  }, [content, targetKeywords, caseSensitive, wholeWordMatch, flexiblePlural, totalContentWords])
 
   // Filtered Table Stats
   const filteredKeywordStats = useMemo(() => {
@@ -151,16 +162,16 @@ Before your first appointment, ensure you review the eligibility requirements, b
 During your visit, medical staff will check your iron levels, blood pressure, and pulse. Understanding donor compensation rates and center operating hours makes your visit smooth and efficient.`
     )
     setSemanticKeywordsRaw(
-      `plasma donation
-KEDPLASMA
-compensation schedule
-iron levels
-blood pressure
-eligibility requirements
-donor portal
-hydration tips
-operating hours
-appointment scheduling`
+      `• plasma donation
+• KEDPLASMA
+• compensation schedule
+• iron levels
+• blood pressure
+• eligibility requirements
+• donor portal
+• hydration tips
+• operating hours
+• appointment scheduling`
     )
     toast.success("Sample content and semantic keywords loaded!")
   }
@@ -206,26 +217,37 @@ ${content}`
     setTimeout(() => setCopiedPrompt(false), 2000)
   }
 
-  // Highlighted Content HTML Generator for Preview
+  // Highlighted Content HTML Generator for Preview (Safely Escaped)
   const highlightedContent = useMemo(() => {
     if (!content.trim() || analysisResults.foundList.length === 0) return content
 
-    let result = content
-    // Sort keywords by length descending so longer phrases match first
+    // Escape HTML markup first so text is safely rendered
+    let safeContent = content
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+
+    // Sort found keywords by length descending so longer phrases match first
     const sortedFound = [...analysisResults.foundList].sort((a, b) => b.length - a.length)
 
-    // Build regex to replace found keywords with highlighted span
+    // Highlight each found keyword
     sortedFound.forEach((kw) => {
       const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-      const regex = new RegExp(`\\b(${escaped})\\b`, caseSensitive ? "g" : "gi")
-      result = result.replace(
+      let pattern = escaped
+      if (flexiblePlural) {
+        pattern = `${escaped}(?:s|es)?`
+      }
+      const flags = caseSensitive ? "g" : "gi"
+      const regex = new RegExp(`(?:^|[^a-zA-Z0-9_])(${pattern})(?=[^a-zA-Z0-9_]|$)`, flags)
+
+      safeContent = safeContent.replace(
         regex,
-        `<mark class="bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 font-semibold px-1 rounded border border-emerald-500/30">$1</mark>`
+        (match, p1) => match.replace(p1, `<mark class="bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-bold px-1 rounded border border-emerald-500/40">${p1}</mark>`)
       )
     })
 
-    return result
-  }, [content, analysisResults.foundList, caseSensitive])
+    return safeContent
+  }, [content, analysisResults.foundList, caseSensitive, flexiblePlural])
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in-50 duration-300">
@@ -244,7 +266,7 @@ ${content}`
             <IconTarget className="size-6 text-sky-500" /> Missing Keyword Analyzer
           </h2>
           <p className="text-xs text-muted-foreground">
-            Analyze your article text against semantic target keywords to find missing terms, keyword counts, and density.
+            Analyze your article text against target semantic keywords to find missing terms, word counts, and keyword density.
           </p>
         </div>
 
@@ -296,7 +318,7 @@ ${content}`
               <IconKey className="size-4 text-amber-500" /> 2. Target Semantic Keywords
             </label>
             <span className="text-[10px] font-mono text-muted-foreground">
-              {targetKeywords.length} keywords defined
+              {targetKeywords.length} clean keywords defined
             </span>
           </div>
 
@@ -304,17 +326,17 @@ ${content}`
             <textarea
               value={semanticKeywordsRaw}
               onChange={(e) => setSemanticKeywordsRaw(e.target.value)}
-              placeholder="Paste target semantic keywords (separated by lines or commas)...
+              placeholder="Paste target semantic keywords (separated by lines, commas, or ChatGPT bullet lists)...
 e.g.
-plasma donation
-KEDPLASMA
-compensation schedule
-iron levels"
+1. plasma donation
+2. KEDPLASMA
+3. compensation schedule
+4. iron levels"
               className="w-full flex-1 border border-border rounded-lg bg-background p-3 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none leading-relaxed"
             />
 
             {/* Match Settings Controls */}
-            <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+            <div className="pt-2 border-t border-border flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
               <label className="flex items-center gap-1.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -332,7 +354,17 @@ iron levels"
                   onChange={(e) => setWholeWordMatch(e.target.checked)}
                   className="rounded border-border text-sky-500 focus:ring-sky-500"
                 />
-                <span>Whole Word Match</span>
+                <span>Exact Word Boundary</span>
+              </label>
+
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={flexiblePlural}
+                  onChange={(e) => setFlexiblePlural(e.target.checked)}
+                  className="rounded border-border text-sky-500 focus:ring-sky-500"
+                />
+                <span>Allow Plurals (s/es)</span>
               </label>
             </div>
           </div>
