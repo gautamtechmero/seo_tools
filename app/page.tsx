@@ -8,7 +8,9 @@ import {
   IconWorld,
   IconFileCode,
   IconTerminal,
-  IconChevronRight
+  IconChevronRight,
+  IconTemplate,
+  IconTarget
 } from "@tabler/icons-react"
 
 // Interface for Tool definitions
@@ -34,6 +36,26 @@ export default function Page() {
       icon: IconSparkles,
       badgeColor: "bg-sky-500/10 text-sky-400 border-sky-500/20",
       href: "/content-analyzer"
+    },
+    {
+      id: "template-switcher",
+      name: "Website Content Template Switcher",
+      description: "Generate ChatGPT prompt templates with sample website and author name substitution. Rotate between author box, disclaimer, about us, and policy templates.",
+      status: "Active",
+      category: "Content",
+      icon: IconTemplate,
+      badgeColor: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+      href: "/template-switcher"
+    },
+    {
+      id: "keyword-analyzer",
+      name: "Missing Keyword Analyzer",
+      description: "Compare your article content against target semantic keywords to instantly identify missing terms, word density, and coverage scores.",
+      status: "Active",
+      category: "Content",
+      icon: IconTarget,
+      badgeColor: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+      href: "/keyword-analyzer"
     },
     {
       id: "meta-generator",
@@ -74,15 +96,15 @@ export default function Page() {
       <div className="space-y-1">
         <h2 className="text-3xl font-extrabold tracking-tight">Marketing Tools Directory</h2>
         <p className="text-sm text-muted-foreground">
-          Select a utility from the list below to begin optimizing website properties and structures.
+          Select a utility from the list below to begin optimizing website properties and content structures.
         </p>
       </div>
 
       {/* Status Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Available Tools", value: "4" },
-          { label: "Active Utilities", value: "1", color: "text-emerald-500 dark:text-emerald-400" },
+          { label: "Available Tools", value: "6" },
+          { label: "Active Utilities", value: "3", color: "text-emerald-500 dark:text-emerald-400" },
           { label: "Under Development", value: "3", color: "text-amber-500 dark:text-amber-400" },
           { label: "Avg Audit Speed", value: "<15ms", color: "text-sky-500 dark:text-sky-400" },
         ].map((stat, i) => (
@@ -99,13 +121,13 @@ export default function Page() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {tools.map((tool) => {
-            const isAnalyzer = tool.id === "analyzer";
+            const isActive = tool.status === "Active";
             return (
               <Link
                 key={tool.id}
                 href={tool.href}
                 className={`group relative bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 ${
-                  isAnalyzer 
+                  isActive 
                     ? "hover:-translate-y-1 hover:border-sky-500/40 hover:shadow-md hover:shadow-sky-500/5 cursor-pointer" 
                     : "opacity-75 cursor-default hover:border-border/60"
                 }`}
@@ -120,7 +142,7 @@ export default function Page() {
                 <div className="space-y-4">
                   {/* Icon Circle */}
                   <div className={`size-11 rounded-xl flex items-center justify-center transition-colors ${
-                    isAnalyzer 
+                    isActive 
                       ? "bg-sky-500/10 text-sky-500 group-hover:bg-sky-500 group-hover:text-white" 
                       : "bg-muted text-muted-foreground/60"
                   }`}>
@@ -130,7 +152,7 @@ export default function Page() {
                   <div className="space-y-1.5">
                     <h4 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-1.5">
                       {tool.name}
-                      {isAnalyzer && <IconChevronRight className="size-4 text-sky-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />}
+                      {isActive && <IconChevronRight className="size-4 text-sky-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />}
                     </h4>
                     <p className="text-sm text-muted-foreground leading-relaxed pr-6">
                       {tool.description}
@@ -140,7 +162,7 @@ export default function Page() {
 
                 <div className="mt-6 pt-4 border-t border-border/60 flex items-center justify-between text-xs font-semibold">
                   <span className="text-muted-foreground font-medium">Category: {tool.category}</span>
-                  {isAnalyzer ? (
+                  {isActive ? (
                     <span className="text-sky-500 group-hover:underline">Launch Tool →</span>
                   ) : (
                     <span className="text-muted-foreground/40 font-medium">Coming Soon</span>

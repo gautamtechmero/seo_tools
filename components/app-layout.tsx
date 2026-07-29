@@ -12,7 +12,9 @@ import {
   IconTerminal,
   IconSun,
   IconMoon,
-  IconKeyboard
+  IconKeyboard,
+  IconTemplate,
+  IconTarget
 } from "@tabler/icons-react"
 
 interface NavItem {
@@ -25,12 +27,29 @@ interface NavItem {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const navItems: NavItem[] = [
     {
       name: "SEO Content Analyzer",
       href: "/content-analyzer",
       icon: IconSparkles,
+      status: "Active"
+    },
+    {
+      name: "Template Switcher",
+      href: "/template-switcher",
+      icon: IconTemplate,
+      status: "Active"
+    },
+    {
+      name: "Missing Keyword Analyzer",
+      href: "/keyword-analyzer",
+      icon: IconTarget,
       status: "Active"
     },
     {
@@ -175,7 +194,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 className="p-2 rounded-lg bg-muted text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                 title="Toggle Theme (or press 'd')"
               >
-                {resolvedTheme === "dark" ? <IconSun className="size-4" /> : <IconMoon className="size-4" />}
+                {!mounted ? (
+                  <div className="size-4" />
+                ) : resolvedTheme === "dark" ? (
+                  <IconSun className="size-4" />
+                ) : (
+                  <IconMoon className="size-4" />
+                )}
               </button>
             </div>
           </div>
@@ -194,7 +219,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             className="p-1.5 rounded-md bg-muted text-muted-foreground"
           >
-            {resolvedTheme === "dark" ? <IconSun className="size-4" /> : <IconMoon className="size-4" />}
+            {!mounted ? (
+              <div className="size-4" />
+            ) : resolvedTheme === "dark" ? (
+              <IconSun className="size-4" />
+            ) : (
+              <IconMoon className="size-4" />
+            )}
           </button>
         </header>
 
