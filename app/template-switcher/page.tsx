@@ -13,7 +13,12 @@ import {
   IconSparkles,
   IconFileText,
   IconArrowsShuffle,
-  IconDice
+  IconDice,
+  IconCpu,
+  IconWand,
+  IconLoader2,
+  IconRefresh,
+  IconRobot
 } from "@tabler/icons-react"
 
 export type CategoryType = "Author Box Content" | "Disclaimer Content" | "Author Box Title" | "Disclaimer Title" | "Footer Notice"
@@ -40,6 +45,13 @@ export default function TemplateSwitcherPage() {
   
   // Copy indicator state
   const [copiedText, setCopiedText] = useState<boolean>(false)
+
+  // Azure OpenAI Integration State
+  const [customAiPrompt, setCustomAiPrompt] = useState<string>("")
+  const [isAiLoading, setIsAiLoading] = useState<boolean>(false)
+  const [aiGeneratedText, setAiGeneratedText] = useState<string | null>(null)
+  const [aiModelUsed, setAiModelUsed] = useState<string | null>(null)
+  const [viewTab, setViewTab] = useState<"standard" | "ai">("standard")
 
   // 25 Total Direct-Text Templates across 5 Categories (5 templates each)
   const allTemplates: TemplateItem[] = useMemo(
@@ -373,42 +385,152 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
     return currentTemplate.contentText(web, auth)
   }, [currentTemplate, targetWebsite, targetAuthor])
 
-  // Shuffle Function: Pick a random variation
-  const handleShuffle = () => {
-    let newIdx = Math.floor(Math.random() * categoryTemplates.length)
-    if (categoryTemplates.length > 1 && newIdx === selectedVariationIndex) {
-      newIdx = (newIdx + 1) % categoryTemplates.length
-    }
-    setSelectedVariationIndex(newIdx)
-    toast.success(`🎲 Shuffled! Loaded ${activeCategory} (Variation ${newIdx + 1})`, {
-      icon: "🔀"
-    })
-  }
+  // Multi-Category Variation State
+  const [variationMap, setVariationMap] = useState<Record<CategoryType, number>>({
+    "Author Box Content": 0,
+    "Disclaimer Content": 0,
+    "Author Box Title": 0,
+    "Disclaimer Title": 0,
+    "Footer Notice": 0
+  })
 
-  // Global Shuffle: Pick a random category AND variation
-  const handleGlobalShuffle = () => {
+  // Copy status indicator for the main Generate All button
+  const [isPackageCopied, setIsPackageCopied] = useState<boolean>(false)
+
+  // Randomize all categories simultaneously & auto-copy to clipboard
+  const handleGenerateAllRandomized = () => {
+    const newMap: Record<CategoryType, number> = {
+      "Author Box Title": Math.floor(Math.random() * 5),
+      "Author Box Content": Math.floor(Math.random() * 5),
+      "Disclaimer Title": Math.floor(Math.random() * 5),
+      "Disclaimer Content": Math.floor(Math.random() * 5),
+      "Footer Notice": Math.floor(Math.random() * 5)
+    }
+    setVariationMap(newMap)
+
+    // Build complete package text with current targetWebsite & targetAuthor
     const categories: CategoryType[] = [
-      "Author Box Content",
-      "Disclaimer Content",
       "Author Box Title",
+      "Author Box Content",
       "Disclaimer Title",
+      "Disclaimer Content",
       "Footer Notice"
     ]
-    const randomCat = categories[Math.floor(Math.random() * categories.length)]
-    const randomVar = Math.floor(Math.random() * 5)
-    setActiveCategory(randomCat)
-    setSelectedVariationIndex(randomVar)
-    toast.success(`🎲 Global Shuffle! Selected ${randomCat} (Var ${randomVar + 1})`, {
-      icon: "🔀"
+
+    const fullSuiteText = categories
+      .map((cat) => {
+        const item = getCategoryText(cat, newMap[cat])
+        return `=== ${cat.toUpperCase()} (Variation #${item.variationNumber}) ===\n${item.text}`
+      })
+      .join("\n\n--------------------------------------------------\n\n")
+
+    // Automatically copy to clipboard
+    navigator.clipboard.writeText(fullSuiteText)
+    setIsPackageCopied(true)
+    toast.success("⚡ Generated & Copied Complete Package to Clipboard! Ready to paste.", {
+      icon: "📋"
     })
+
+    setTimeout(() => setIsPackageCopied(false), 2500)
   }
 
+  // Randomize a single category variation
+  const handleRandomizeSingleCategory = (cat: CategoryType) => {
+    const currentVal = variationMap[cat] || 0
+    let nextVal = Math.floor(Math.random() * 5)
+    if (nextVal === currentVal) nextVal = (nextVal + 1) % 5
+    setVariationMap((prev) => ({ ...prev, [cat]: nextVal }))
+    toast.info(`Randomized ${cat} (Loaded Variation #${nextVal + 1})`, { icon: "🔀" })
+  }
+
+  // Get generated text for any category and variation index
+  const getCategoryText = (cat: CategoryType, varIdx: number) => {
+    const templates = allTemplates.filter((t) => t.category === cat)
+    const template = templates[varIdx] || templates[0]
+    const web = targetWebsite.trim() || "TARGET_WEBSITE"
+    const auth = targetAuthor.trim() || "TARGET_AUTHOR"
+    return {
+      templateName: template.name,
+      variationNumber: template.variationNumber,
+      text: template.contentText(web, auth)
+    }
+  }
+
+  // Copy full generated suite to clipboard
+  const handleCopyFullSuite = () => {
+    const categories: CategoryType[] = [
+      "Author Box Title",
+      "Author Box Content",
+      "Disclaimer Title",
+      "Disclaimer Content",
+      "Footer Notice"
+    ]
+
+    const fullSuiteText = categories
+      .map((cat) => {
+        const item = getCategoryText(cat, variationMap[cat] || 0)
+        return `=== ${cat.toUpperCase()} (Variation #${item.variationNumber}) ===\n${item.text}`
+      })
+      .join("\n\n--------------------------------------------------\n\n")
+
+    navigator.clipboard.writeText(fullSuiteText)
+    toast.success("Copied complete 5-section content package to clipboard!")
+  }
+
+  // Unified Single Handler: Generate & Shuffle Template
+  const handleGenerateAndShuffle = () => {
+    handleGenerateAllRandomized()
+  }
+
+  // Shuffle Alias for compatibility
+  const handleShuffle = handleGenerateAndShuffle
+
   // Copy Direct Text to Clipboard
-  const handleCopyText = () => {
-    navigator.clipboard.writeText(generatedText)
+  const handleCopyText = (textToCopy?: string) => {
+    const text = textToCopy || (viewTab === "ai" && aiGeneratedText ? aiGeneratedText : generatedText)
+    navigator.clipboard.writeText(text)
     setCopiedText(true)
     toast.success("Text copied to clipboard! Ready to paste.")
     setTimeout(() => setCopiedText(false), 2000)
+  }
+
+  // Call Azure OpenAI API Route
+  const handleGenerateAi = async (mode: "rewrite" | "new" = "rewrite") => {
+    const web = targetWebsite.trim() || "TARGET_WEBSITE"
+    const auth = targetAuthor.trim() || "TARGET_AUTHOR"
+
+    setIsAiLoading(true)
+    setViewTab("ai")
+    toast.loading("Communicating with Azure OpenAI (gpt-5.4-nano)...", { id: "azure-ai" })
+
+    try {
+      const res = await fetch("/api/generate-ai-template", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: activeCategory,
+          website: web,
+          author: auth,
+          customInstruction: customAiPrompt.trim(),
+          baseText: mode === "rewrite" ? generatedText : undefined
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Failed to generate AI template")
+      }
+
+      setAiGeneratedText(data.resultText)
+      setAiModelUsed(data.modelUsed || "gpt-5.4-nano")
+      toast.success("✨ Generated template using Azure OpenAI!", { id: "azure-ai" })
+    } catch (err: any) {
+      console.error("AI Generation Error:", err)
+      toast.error(err.message || "Failed to connect to Azure OpenAI", { id: "azure-ai" })
+    } finally {
+      setIsAiLoading(false)
+    }
   }
 
   return (
@@ -432,21 +554,14 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
           </p>
         </div>
 
-        {/* Global Shuffle & Cycle Actions */}
+        {/* Unified Single Action: Generate & Shuffle Template */}
         <div className="flex items-center gap-2">
           <button
-            onClick={handleGlobalShuffle}
-            className="px-3.5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-sm transition-all flex items-center gap-1.5"
-            title="Randomize Category and Variation"
+            onClick={handleGenerateAndShuffle}
+            className="px-5 py-2.5 text-xs font-extrabold bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white rounded-xl shadow-md shadow-sky-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
           >
-            <IconDice className="size-4" /> Global Shuffle
-          </button>
-
-          <button
-            onClick={handleShuffle}
-            className="px-4 py-2 text-xs font-bold bg-sky-500 hover:bg-sky-600 text-white rounded-lg shadow-sm shadow-sky-500/20 transition-all flex items-center gap-2"
-          >
-            <IconArrowsShuffle className="size-4" /> Shuffle Template
+            <IconArrowsShuffle className="size-4 stroke-[2.5]" />
+            <span>Generate & Shuffle Template</span>
           </button>
         </div>
       </div>
@@ -488,141 +603,116 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
         </div>
       </div>
 
-      {/* CATEGORY SELECTOR TABS */}
-      <div className="bg-card border border-border rounded-xl p-4 space-y-3 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold tracking-tight uppercase text-muted-foreground flex items-center gap-1.5">
-            <IconSparkles className="size-4 text-sky-500" /> Content Category
+      {/* GENERATE ALL CATEGORIES PRIMARY ACTION BAR */}
+      <div className="bg-card border border-sky-500/30 bg-gradient-to-r from-sky-500/10 to-indigo-500/10 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+        <div className="space-y-1 text-center sm:text-left">
+          <h3 className="text-base font-extrabold text-foreground tracking-tight flex items-center justify-center sm:justify-start gap-2">
+            <IconSparkles className="size-5 text-sky-500 animate-pulse" />
+            Generate Complete Website Package
           </h3>
-          <span className="text-[11px] font-semibold text-sky-500 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
-            {activeCategory}
-          </span>
+          <p className="text-xs text-muted-foreground">
+            Instantly generates ready-to-paste text for all 5 content categories using randomized template variations for <span className="font-semibold text-foreground">{targetWebsite.trim() || "Website"}</span> and <span className="font-semibold text-foreground">{targetAuthor.trim() || "Author"}</span>.
+          </p>
         </div>
 
-        {/* Category Selector Chips */}
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              "Author Box Content",
-              "Disclaimer Content",
-              "Author Box Title",
-              "Disclaimer Title",
-              "Footer Notice"
-            ] as CategoryType[]
-          ).map((cat) => {
-            const isSelected = activeCategory === cat
-            return (
-              <button
-                key={cat}
-                onClick={() => {
-                  setActiveCategory(cat)
-                  setSelectedVariationIndex(0)
-                  toast.info(`Switched category to ${cat}`)
-                }}
-                className={`px-3.5 py-2 text-xs font-semibold rounded-lg border transition-all flex items-center gap-2 ${
-                  isSelected
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                    : "bg-muted/40 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <span>{cat}</span>
-                {isSelected && <IconCheck className="size-3.5" />}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* VARIATION SELECTOR & SHUFFLE ROW */}
-      <div className="bg-card border border-border rounded-xl p-4 space-y-3 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold tracking-tight uppercase text-muted-foreground flex items-center gap-1.5">
-            <IconTemplate className="size-4 text-amber-500" /> Select Variation ({categoryTemplates.length} Available)
-          </h3>
-          
+        <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
           <button
-            onClick={handleShuffle}
-            className="px-3 py-1 text-xs font-bold bg-sky-500/10 text-sky-500 border border-sky-500/20 hover:bg-sky-500 hover:text-white rounded-md transition-all flex items-center gap-1.5"
+            onClick={handleGenerateAllRandomized}
+            className={`w-full sm:w-auto px-5 py-3 text-xs font-extrabold rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 ${
+              isPackageCopied
+                ? "bg-emerald-600 text-white shadow-emerald-500/25"
+                : "bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white shadow-sky-500/25"
+            }`}
           >
-            <IconArrowsShuffle className="size-3.5" /> Shuffle Variation
+            {isPackageCopied ? (
+              <>
+                <IconCheck className="size-4 stroke-[3]" />
+                <span>Copied Package! Ready to Paste 📋</span>
+              </>
+            ) : (
+              <>
+                <IconArrowsShuffle className="size-4 stroke-[2.5]" />
+                <span>⚡ Generate & Copy All Categories</span>
+              </>
+            )}
           </button>
         </div>
-
-        {/* Variation Buttons (1 to 5) */}
-        <div className="flex flex-wrap gap-2">
-          {categoryTemplates.map((tpl, index) => {
-            const isSelected = selectedVariationIndex === index
-            return (
-              <button
-                key={tpl.id}
-                onClick={() => {
-                  setSelectedVariationIndex(index)
-                  toast.info(`Loaded Variation #${index + 1}`)
-                }}
-                className={`px-3.5 py-2 text-xs font-semibold rounded-lg border transition-all flex items-center gap-2 ${
-                  isSelected
-                    ? "bg-sky-500 text-white border-sky-500 shadow-sm"
-                    : "bg-muted/40 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                <span>Variation #{index + 1}</span>
-                {isSelected && <IconCheck className="size-3.5" />}
-              </button>
-            )
-          })}
-        </div>
       </div>
 
-      {/* MAIN GENERATED OUTPUT BOX */}
-      <div className="bg-card border border-border rounded-xl p-6 space-y-4 shadow-sm">
-        
-        {/* Output Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-foreground">
-                {currentTemplate.name}
-              </h3>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20">
-                Variation #{currentTemplate.variationNumber}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {currentTemplate.description}
+      {/* GENERATED ALL-IN-ONE PACKAGE DISPLAY */}
+      <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-sm">
+        <div className="flex items-center justify-between border-b border-border pb-3">
+          <div>
+            <h3 className="text-sm font-extrabold text-foreground tracking-tight flex items-center gap-2">
+              <IconFileText className="size-4 text-emerald-500" />
+              Generated Website Package (All 5 Categories)
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              Randomized variations compiled for <span className="font-semibold text-foreground">{targetWebsite || "Website"}</span> & <span className="font-semibold text-foreground">{targetAuthor || "Author"}</span>
             </p>
           </div>
 
-          {/* Action Buttons: Shuffle + Copy Direct Text */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleShuffle}
-              className="px-3.5 py-2 text-xs font-bold bg-muted hover:bg-accent border border-border rounded-lg transition-colors flex items-center gap-1.5 text-foreground"
-              title="Shuffle Variation"
-            >
-              <IconArrowsShuffle className="size-4 text-sky-500" /> Shuffle
-            </button>
-
-            <button
-              onClick={handleCopyText}
-              className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-sm shadow-emerald-500/10"
-            >
-              {copiedText ? <IconCheck className="size-4" /> : <IconCopy className="size-4" />}
-              {copiedText ? "Copied Text!" : "Copy Text"}
-            </button>
-          </div>
+          <button
+            onClick={handleCopyFullSuite}
+            className="px-3.5 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+          >
+            <IconCopy className="size-3.5" />
+            <span>Copy Complete Package</span>
+          </button>
         </div>
 
-        {/* Content Box */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground flex items-center gap-1.5">
-              <IconFileText className="size-4 text-emerald-500" /> Ready-to-Paste Website Content
-            </span>
-            <span className="font-mono text-[11px]">{generatedText.length} characters</span>
-          </div>
-          <div className="bg-muted/50 border border-border rounded-xl p-4 font-mono text-xs text-foreground whitespace-pre-wrap leading-relaxed max-h-[450px] overflow-y-auto select-text">
-            {generatedText}
-          </div>
+        <div className="grid grid-cols-1 gap-4">
+          {(
+            [
+              "Author Box Title",
+              "Author Box Content",
+              "Disclaimer Title",
+              "Disclaimer Content",
+              "Footer Notice"
+            ] as CategoryType[]
+          ).map((cat) => {
+            const varIdx = variationMap[cat] || 0
+            const item = getCategoryText(cat, varIdx)
+
+            return (
+              <div key={cat} className="bg-muted/40 border border-border/80 rounded-xl p-4 space-y-2 hover:border-sky-500/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-foreground">{cat}</span>
+                    <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                      Variation #{item.variationNumber}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleRandomizeSingleCategory(cat)}
+                      className="px-2.5 py-1 text-[11px] font-semibold bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded border border-border/60 transition-colors flex items-center gap-1"
+                      title="Randomize this variation"
+                    >
+                      <IconArrowsShuffle className="size-3 text-sky-500" />
+                      <span>Shuffle</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(item.text)
+                        toast.success(`Copied ${cat}!`)
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-bold bg-sky-500/10 text-sky-500 hover:bg-sky-500 hover:text-white rounded border border-sky-500/20 transition-all flex items-center gap-1"
+                    >
+                      <IconCopy className="size-3" />
+                      <span>Copy</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="font-mono text-xs text-foreground bg-background/80 border border-border/50 rounded-lg p-3 whitespace-pre-wrap leading-relaxed">
+                  {item.text}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 

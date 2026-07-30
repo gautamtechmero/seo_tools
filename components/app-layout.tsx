@@ -14,7 +14,9 @@ import {
   IconMoon,
   IconKeyboard,
   IconTemplate,
-  IconTarget
+  IconTarget,
+  IconLogout,
+  IconLock
 } from "@tabler/icons-react"
 
 interface NavItem {
@@ -32,6 +34,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  if (pathname === "/") {
+    return <>{children}</>
+  }
 
   const navItems: NavItem[] = [
     {
@@ -183,8 +189,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="border-t border-border pt-4 px-2">
-            <div className="flex items-center justify-between">
+          <div className="border-t border-border pt-3 px-2 space-y-3">
+            <Link
+              href="/"
+              className="flex items-center justify-between w-full px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <IconLogout className="size-3.5" /> Sign Out
+              </span>
+              <span className="text-[10px] text-muted-foreground/60 font-mono">⌘Q</span>
+            </Link>
+
+            <div className="flex items-center justify-between pt-1">
               <div className="text-xs text-muted-foreground">
                 <span className="font-semibold block text-foreground">Marketing Ops</span>
                 <span className="text-[10px]">Team Portal v0.1.0</span>
