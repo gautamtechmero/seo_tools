@@ -13,15 +13,20 @@ import {
   IconSparkles,
   IconFileText,
   IconArrowsShuffle,
-  IconDice,
-  IconCpu,
-  IconWand,
   IconLoader2,
+  IconRobot,
+  IconWand,
   IconRefresh,
-  IconRobot
+  IconAdjustmentsHorizontal,
+  IconCpu
 } from "@tabler/icons-react"
 
-export type CategoryType = "Author Box Content" | "Disclaimer Content" | "Author Box Title" | "Disclaimer Title" | "Footer Notice"
+export type CategoryType =
+  | "Author Box Title"
+  | "Author Box Content"
+  | "Disclaimer Title"
+  | "Disclaimer Content"
+  | "Footer Notice"
 
 interface TemplateItem {
   id: string
@@ -33,46 +38,56 @@ interface TemplateItem {
 }
 
 export default function TemplateSwitcherPage() {
-  // Input fields (User inputs Target Website & Target Author)
-  const [targetWebsite, setTargetWebsite] = useState<string>("FMC4ME")
+  // Target Inputs
+  const [targetWebsite, setTargetWebsite] = useState<string>("NMLS")
   const [targetAuthor, setTargetAuthor] = useState<string>("Daniel Rodriguez")
 
-  // Selected Category
-  const [activeCategory, setActiveCategory] = useState<CategoryType>("Author Box Content")
+  // Generation Engine Mode: 'ai' or 'preset'
+  const [engineMode, setEngineMode] = useState<"ai" | "preset">("ai")
 
-  // Selected Variation Index (0 to 4)
-  const [selectedVariationIndex, setSelectedVariationIndex] = useState<number>(0)
-  
-  // Copy indicator state
-  const [copiedText, setCopiedText] = useState<boolean>(false)
-
-  // Azure OpenAI Integration State
+  // AI Prompt & Tone Options
+  const [aiTone, setAiTone] = useState<string>("Professional & Clear")
   const [customAiPrompt, setCustomAiPrompt] = useState<string>("")
-  const [isAiLoading, setIsAiLoading] = useState<boolean>(false)
-  const [aiGeneratedText, setAiGeneratedText] = useState<string | null>(null)
-  const [aiModelUsed, setAiModelUsed] = useState<string | null>(null)
-  const [viewTab, setViewTab] = useState<"standard" | "ai">("standard")
 
-  // 25 Total Direct-Text Templates across 5 Categories (5 templates each)
+  // AI Package Data State
+  const [aiPackage, setAiPackage] = useState<Record<CategoryType, string>>({
+    "Author Box Title": "",
+    "Author Box Content": "",
+    "Disclaimer Title": "",
+    "Disclaimer Content": "",
+    "Footer Notice": ""
+  })
+
+  // Loading States
+  const [isAiPackageLoading, setIsAiPackageLoading] = useState<boolean>(false)
+  const [loadingCategories, setLoadingCategories] = useState<Record<string, boolean>>({})
+  const [isPackageCopied, setIsPackageCopied] = useState<boolean>(false)
+
+  // Preset Variation Index Map (0-4 for each category)
+  const [variationMap, setVariationMap] = useState<Record<CategoryType, number>>({
+    "Author Box Title": 0,
+    "Author Box Content": 0,
+    "Disclaimer Title": 0,
+    "Disclaimer Content": 0,
+    "Footer Notice": 0
+  })
+
+  // 25 Clean Preset Templates (5 per category)
   const allTemplates: TemplateItem[] = useMemo(
     () => [
-      // -------------------------------------------------------------
-      // CATEGORY 1: 5 AUTHOR BOX CONTENT TEMPLATES (Direct Text)
-      // -------------------------------------------------------------
+      // CATEGORY 1: AUTHOR BOX CONTENT
       {
         id: "author-box-1",
         category: "Author Box Content",
         variationNumber: 1,
-        name: "Author Box - Variation 1 (Plasma / General Guide Style)",
-        description: "Introductory guide tone for plasma centers and service portals.",
+        name: "Author Box - Variation 1 (Comprehensive Portal & Service Guide)",
+        description: "Introductory guide tone for official systems, portals, and service guides.",
         contentText: (targetWeb, targetAuth) =>
-          `Hi, I'm ${targetAuth}, and I put together this guide to help you navigate plasma donation at ${targetWeb}, whether it's your very first visit or you're already a regular.
+          `Hi, I'm ${targetAuth}, and I put together this guide to help you navigate ${targetWeb}, whether it's your very first visit or you're already a regular user.
 
-Walking into a donation center for the first time can feel like a lot: eligibility questions, what to eat beforehand, how long it'll take, what the compensation schedule actually looks like. And even for frequent donors, it helps to have a clear resource on hand for things like scheduling, iron level requirements, or what changes if you switch centers.
+Navigating online portals, requirements, and policies can feel overwhelming. My aim with this guide is to take the guesswork out of it, so you know exactly what to expect and can find reliable answers quickly.
 
-My aim with this guide is to take the guesswork out of it, so you know exactly what to expect before you sit down in the chair, and you can focus on what matters: staying comfortable, staying informed, and knowing your donation is making a real difference.
-
-Thanks for taking the time to donate. It genuinely matters.
+Thanks for stopping by. I hope this resource helps you make informed decisions with confidence.
 
 ${targetAuth}`
       },
@@ -83,11 +98,11 @@ ${targetAuth}`
         name: "Author Box - Variation 2 (Passionate Guide & Troubleshooting)",
         description: "Focuses on providing step-by-step guides and stress-free advice.",
         contentText: (targetWeb, targetAuth) =>
-          `Hello! I'm ${targetAuth}, and I'm passionate about helping travelers and shoppers understand everything about ${targetWeb}. Whether you're looking to purchase a gift card, redeem it for flights, understand the terms and conditions, or maximize its value, I'm here to make the process simple and stress-free.
+          `Hello! I'm ${targetAuth}, and I'm passionate about helping users understand everything about ${targetWeb}. Whether you're looking to understand features, check requirements, or troubleshoot common issues, I'm here to make the process simple and stress-free.
 
-This website is dedicated to providing accurate, easy-to-follow, and up-to-date information about ${targetWeb}. From step-by-step redemption guides and eligibility requirements to money-saving tips and common troubleshooting solutions, you'll find practical resources designed to answer your questions with clarity.
+This website is dedicated to providing accurate, easy-to-follow, and up-to-date information about ${targetWeb}. From step-by-step navigation guides to policy breakdowns, you'll find practical resources designed to answer your questions with clarity.
 
-My goal is to break down complex information into straightforward advice that anyone can follow. I believe that finding reliable information shouldn't be complicated, and every guide on this site is created to help you make informed decisions with confidence.
+My goal is to break down complex procedures into straightforward advice that anyone can follow.
 
 ${targetAuth}`
       },
@@ -98,13 +113,11 @@ ${targetAuth}`
         name: "Author Box - Variation 3 (Research & Unbiased Information)",
         description: "Emphasizes research, clarity, and saving readers time.",
         contentText: (targetWeb, targetAuth) =>
-          `I'm ${targetAuth}, the writer behind this website and someone who enjoys making information easier to understand. My focus is on researching and explaining everything related to ${targetWeb} so you can find accurate answers without spending hours searching through multiple sources.
+          `I'm ${targetAuth}, the writer behind this website. My focus is on researching and explaining everything related to ${targetWeb} so you can find accurate answers without spending hours searching through multiple sources.
 
-On this website, you'll discover practical guides covering how to navigate ${targetWeb}, understand benefits, check important policies, and avoid common mistakes. I also share helpful tips to help you maximize your value and make the most of every visit.
+On this website, you'll discover practical guides covering how to navigate ${targetWeb}, understand key requirements, avoid common mistakes, and stay informed on recent updates.
 
-I believe reliable information should be clear, unbiased, and easy to follow. That's why every article is written in simple language with step-by-step explanations, whether you're using ${targetWeb} for the first time or you're already familiar with the process.
-
-Thank you for stopping by. I hope this website becomes your go-to resource whenever you need trustworthy information about ${targetWeb}.
+I believe reliable information should be clear, unbiased, and easy to follow. Thank you for stopping by!
 
 Best wishes,
 
@@ -119,13 +132,11 @@ ${targetAuth}`
         contentText: (targetWeb, targetAuth) =>
           `Welcome! I'm ${targetAuth}, the writer and researcher behind this website dedicated to ${targetWeb}.
 
-My mission is to provide clear, reliable, and easy-to-understand information for anyone looking to learn more about ${targetWeb}. Whether you're exploring current offers, purchasing products, or understanding terms and restrictions, this resource is designed to help you every step of the way.
+My mission is to provide clear, reliable, and easy-to-understand information for anyone looking to learn more about ${targetWeb}. Whether you're exploring services, checking guidelines, or seeking official resources, this guide is designed to help you every step of the way.
 
-I focus on creating practical guides that simplify complex policies and answer the questions real users ask. Every article is written with the goal of saving you time by presenting accurate information in a straightforward, reader-friendly format.
+As programs and policies change over time, I strive to keep the content updated so you can move forward with confidence.
 
-As programs and promotional offers can change over time, I strive to keep the content updated so you can make informed decisions with confidence. Whether you're a first-time visitor or a frequent user, you'll find helpful insights, step-by-step tutorials, and useful tips throughout this website.
-
-Thank you for stopping by. I hope this guide becomes your trusted resource for everything related to ${targetWeb}.
+Thank you for visiting!
 
 Best wishes,
 
@@ -140,34 +151,28 @@ ${targetAuth}`
         contentText: (targetWeb, targetAuth) =>
           `Hi, I'm ${targetAuth}, and I'm glad you're here!
 
-I created this website to help people find trustworthy, easy-to-read information about ${targetWeb} without having to search through multiple sources. Whether you're wondering how these services work, where to find details, or how to get the best value, you'll find practical answers here.
+I created this website to help people find trustworthy, easy-to-read information about ${targetWeb} without having to search through confusing documentation.
 
-My approach is simple: explain everything in plain language, keep the information organized, and focus on what matters most to readers. Every guide is designed to answer common questions, clear up confusion, and provide step-by-step instructions that are easy to follow.
+My approach is simple: explain everything in plain language, keep the information organized, and focus on what matters most to readers.
 
-I'm committed to keeping this resource informative and up to date, so you can confidently navigate ${targetWeb} options and related policies as they evolve.
-
-Thank you for visiting! I hope this website helps you save time, make smarter decisions, and enjoy a smoother experience.
+Thank you for visiting! I hope this website helps you save time and enjoy a smoother experience.
 
 Best Wishes,
 
 ${targetAuth}`
       },
 
-      // -------------------------------------------------------------
-      // CATEGORY 2: 5 DISCLAIMER CONTENT TEMPLATES (Direct Text)
-      // -------------------------------------------------------------
+      // CATEGORY 2: DISCLAIMER CONTENT
       {
         id: "disclaimer-1",
         category: "Disclaimer Content",
         variationNumber: 1,
         name: "Disclaimer - Variation 1 (Standard Independent Publisher Notice)",
-        description: "Covers independent operation, non-affiliation, trademarks, and content advice.",
+        description: "Covers independent operation, non-affiliation, and trademark owners.",
         contentText: (targetWeb) =>
-          `This website operates independently and has no affiliation, endorsement, or association with ${targetWeb} or any of its products or services.
+          `This website operates independently and has no affiliation, endorsement, or official association with ${targetWeb} or any of its parent organizations or affiliates.
 
-All trademarks, service marks, trade names, product names, and logos referenced here belong to their respective owners. Similarly, all visual content including images, illustrations, and photographs remains the copyrighted property of its original owner.
-
-Nothing on this site constitutes a recommendation or endorsement of any particular service provider, plan, or course of action. Content is provided for informational purposes only and should not replace professional advice. This site is not endorsed by, or affiliated with, ${targetWeb.toLowerCase()}.com or its providers.
+All trademarks, service marks, trade names, product names, and logos referenced here belong to their respective owners. Content is provided strictly for educational and informational purposes.
 
 The publisher assumes no responsibility for outcomes resulting from the use of information found on this website.`
       },
@@ -176,63 +181,55 @@ The publisher assumes no responsibility for outcomes resulting from the use of i
         category: "Disclaimer Content",
         variationNumber: 2,
         name: "Disclaimer - Variation 2 (Educational Resource & No Liability)",
-        description: "States educational intent and disclaims owner liability for decisions.",
+        description: "States educational intent and disclaims owner liability.",
         contentText: (targetWeb) =>
-          `This website is an independent informational resource and is not connected with, authorized by, or officially supported by ${targetWeb} or any of its affiliates.
+          `This website is an independent informational resource and is not connected with, authorized by, or officially supported by ${targetWeb}.
 
-Any trademarks, brand names, logos, product names, and service marks mentioned throughout this website are the property of their respective owners. All images, illustrations, and other visual materials remain the intellectual property of their original copyright holders.
+Trademarks, brand names, and service marks mentioned throughout this website are the property of their respective owners. For official services, accounts, and binding guidelines, please consult the official portal directly.
 
-The information published here is intended solely to educate and inform readers. It should not be interpreted as official guidance, professional advice, or an endorsement of any company, product, or service. For the most accurate and up-to-date information, please refer to official websites.
-
-The website owner is not liable for any decisions, losses, or consequences arising from the use of the information provided on this site.`
+The website owner is not liable for decisions, losses, or consequences arising from reliance on the information provided here.`
       },
       {
         id: "disclaimer-3",
         category: "Disclaimer Content",
         variationNumber: 3,
         name: "Disclaimer - Variation 3 (No Partnership & General Reference)",
-        description: "Emphasizes use of trademarks for identification only without partnership.",
+        description: "Emphasizes use of names for identification only.",
         contentText: (targetWeb) =>
-          `This website has been created solely for informational and educational purposes. It is an independent resource and is not sponsored by, affiliated with, authorized by, or endorsed by ${targetWeb} or any of its affiliated companies.
+          `This website has been created solely for informational and reference purposes. It is an independent resource and is not sponsored by, affiliated with, or endorsed by ${targetWeb}.
 
-All trademarks, logos, brand names, product names, and service marks mentioned on this website are the property of their respective owners and are used solely for identification purposes. Their use does not imply any partnership or endorsement.
+All brand names and trademarks mentioned are used solely for identification purposes. Their use does not imply any partnership or endorsement.
 
-The content published here is intended for general informational and educational purposes only. While we strive to keep the information accurate and up to date, we cannot guarantee its completeness or accuracy. For official details, please refer to the primary official website.
-
-The website owner is not responsible for any losses, damages, or decisions resulting from the use of the information provided on this site.`
+For official assistance or account access, please visit the official ${targetWeb} portal.`
       },
       {
         id: "disclaimer-4",
         category: "Disclaimer Content",
         variationNumber: 4,
-        name: "Disclaimer - Variation 4 (Independent Platform & Independent Verification)",
+        name: "Disclaimer - Variation 4 (Independent Platform)",
         description: "Reminds users to independently verify critical information.",
         contentText: (targetWeb) =>
-          `This site is an independent informational platform and is not operated by, connected to, or representative of ${targetWeb} or any of its related entities. No affiliation, sponsorship, or endorsement by ${targetWeb} or its partners should be inferred.
+          `This site is an independent informational platform and is not operated by, connected to, or representative of ${targetWeb}.
 
-All product names, logos, and service marks appearing here remain the property of their respective owners and are used solely for identification.
+All logos and product names remain the property of their respective owners. We do not guarantee the completeness or accuracy of third-party policy details, as official rules change frequently.
 
-The content is for general reference and educational use only. We do not guarantee its accuracy, currency, or completeness, as program details and policies may change. For official and binding information, please consult official portals or authorized representatives.
-
-The website owner accepts no liability for any losses, claims, or decisions arising from reliance on the information provided. Users are responsible for independently verifying all critical data.`
+Users are advised to independently verify all critical data directly with official providers.`
       },
       {
         id: "disclaimer-5",
         category: "Disclaimer Content",
         variationNumber: 5,
-        name: "Disclaimer - Variation 5 (Privately Operated & Account Portal Notice)",
-        description: "Clarifies that the site cannot process claims or account transactions.",
+        name: "Disclaimer - Variation 5 (Privately Operated Portal Notice)",
+        description: "Clarifies inability to process official transactions or claims.",
         contentText: (targetWeb) =>
-          `This website is an independent, privately operated informational resource and is not owned, operated by, affiliated with, or endorsed by ${targetWeb} or its affiliates. All brand names, logos, and marks referenced here belong to their respective owners and are used solely for identification.
+          `This website is a privately operated informational resource and is not owned by or affiliated with ${targetWeb}.
 
-This site does not provide access to official account services and cannot process claims, enrollments, payments, or account activity. Content is for general informational purposes only, compiled from publicly available sources, and may be outdated or inaccurate. For current, official information, please visit official portals directly.
+This site does not provide access to official account portals and cannot process claims, filings, registrations, or official transactions. Content is compiled from publicly available reference materials.
 
-This site does not offer professional, legal, tax, or financial advice. Users must independently verify all information before relying on it. The site owner accepts no liability for losses or decisions arising from use of this content.`
+Please navigate to official channels for account logins and official submissions.`
       },
 
-      // -------------------------------------------------------------
-      // CATEGORY 3: 5 AUTHOR BOX TITLE TEMPLATES (Direct Text)
-      // -------------------------------------------------------------
+      // CATEGORY 3: AUTHOR BOX TITLE
       {
         id: "author-title-1",
         category: "Author Box Title",
@@ -274,9 +271,7 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
         contentText: (_, targetAuth) => `A Letter from ${targetAuth}`
       },
 
-      // -------------------------------------------------------------
-      // CATEGORY 4: 5 DISCLAIMER TITLE TEMPLATES (Direct Text)
-      // -------------------------------------------------------------
+      // CATEGORY 4: DISCLAIMER TITLE
       {
         id: "disclaimer-title-1",
         category: "Disclaimer Title",
@@ -318,9 +313,7 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
         contentText: () => `Important Information`
       },
 
-      // -------------------------------------------------------------
-      // CATEGORY 5: 5 FOOTER NOTICE TEMPLATES (Direct Text)
-      // -------------------------------------------------------------
+      // CATEGORY 5: FOOTER NOTICE
       {
         id: "footer-1",
         category: "Footer Notice",
@@ -346,7 +339,7 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
         name: "Footer Notice 3 (Educational Resource Notice)",
         description: "States educational resource purpose and author management.",
         contentText: (targetWeb, targetAuth) =>
-          `Disclaimer: ${targetWeb} operates independently as an educational resource. Articles managed by ${targetAuth}. Not an official representative website.`
+          `Disclaimer: ${targetWeb} operates independently as an educational resource. Content managed by ${targetAuth}. Not an official representative website.`
       },
       {
         id: "footer-4",
@@ -370,35 +363,176 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
     []
   )
 
-  // Current category templates (5 templates)
-  const categoryTemplates = useMemo(() => {
-    return allTemplates.filter((t) => t.category === activeCategory)
-  }, [allTemplates, activeCategory])
-
-  // Current selected template
-  const currentTemplate = categoryTemplates[selectedVariationIndex] || categoryTemplates[0]
-
-  // Direct Content Output Text
-  const generatedText = useMemo(() => {
+  // Get current text for a category depending on engineMode
+  const getCategoryDisplay = (cat: CategoryType) => {
     const web = targetWebsite.trim() || "TARGET_WEBSITE"
     const auth = targetAuthor.trim() || "TARGET_AUTHOR"
-    return currentTemplate.contentText(web, auth)
-  }, [currentTemplate, targetWebsite, targetAuthor])
 
-  // Multi-Category Variation State
-  const [variationMap, setVariationMap] = useState<Record<CategoryType, number>>({
-    "Author Box Content": 0,
-    "Disclaimer Content": 0,
-    "Author Box Title": 0,
-    "Disclaimer Title": 0,
-    "Footer Notice": 0
-  })
+    if (engineMode === "ai" && aiPackage[cat]?.trim()) {
+      return {
+        isAi: true,
+        variationLabel: "Azure OpenAI (gpt-5.4-nano)",
+        text: aiPackage[cat]
+      }
+    }
 
-  // Copy status indicator for the main Generate All button
-  const [isPackageCopied, setIsPackageCopied] = useState<boolean>(false)
+    // Fallback or preset mode
+    const templates = allTemplates.filter((t) => t.category === cat)
+    const varIdx = variationMap[cat] || 0
+    const template = templates[varIdx] || templates[0]
 
-  // Randomize all categories simultaneously & auto-copy to clipboard
-  const handleGenerateAllRandomized = () => {
+    return {
+      isAi: false,
+      variationLabel: `Preset Variation #${template.variationNumber}`,
+      text: template.contentText(web, auth)
+    }
+  }
+
+  // Safe Clipboard Copy Helper (Handles async permissions & fallback execCommand)
+  const safeCopyToClipboard = async (text: string): Promise<boolean> => {
+    if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text)
+        return true
+      } catch (err) {
+        console.warn("Direct navigator.clipboard.writeText failed, using fallback:", err)
+      }
+    }
+
+    try {
+      const textArea = document.createElement("textarea")
+      textArea.value = text
+      textArea.style.position = "fixed"
+      textArea.style.left = "-999999px"
+      textArea.style.top = "-999999px"
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      const successful = document.execCommand("copy")
+      document.body.removeChild(textArea)
+      return successful
+    } catch (err) {
+      console.error("Fallback clipboard copy failed:", err)
+      return false
+    }
+  }
+
+  // Action 1: Generate Complete AI Package via Azure OpenAI
+  const handleGenerateAiPackage = async () => {
+    const web = targetWebsite.trim() || "TARGET_WEBSITE"
+    const auth = targetAuthor.trim() || "TARGET_AUTHOR"
+
+    setIsAiPackageLoading(true)
+    toast.loading(`Azure OpenAI (gpt-5.4-nano) generating complete package for ${web}...`, { id: "ai-pkg" })
+
+    try {
+      const res = await fetch("/api/generate-ai-template", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "package",
+          website: web,
+          author: auth,
+          tone: aiTone,
+          customInstruction: customAiPrompt.trim()
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Failed to generate AI package")
+      }
+
+      if (data.package) {
+        const newPkg: Record<CategoryType, string> = {
+          "Author Box Title": data.package.authorBoxTitle || `Meet the Author, ${auth}`,
+          "Author Box Content": data.package.authorBoxContent || "",
+          "Disclaimer Title": data.package.disclaimerTitle || "Important Disclaimer",
+          "Disclaimer Content": data.package.disclaimerContent || "",
+          "Footer Notice": data.package.footerNotice || ""
+        }
+
+        setAiPackage(newPkg)
+        setEngineMode("ai")
+
+        const fullText = [
+          `=== AUTHOR BOX TITLE ===\n${newPkg["Author Box Title"]}`,
+          `=== AUTHOR BOX CONTENT ===\n${newPkg["Author Box Content"]}`,
+          `=== DISCLAIMER TITLE ===\n${newPkg["Disclaimer Title"]}`,
+          `=== DISCLAIMER CONTENT ===\n${newPkg["Disclaimer Content"]}`,
+          `=== FOOTER NOTICE ===\n${newPkg["Footer Notice"]}`
+        ].join("\n\n--------------------------------------------------\n\n")
+
+        const copied = await safeCopyToClipboard(fullText)
+        if (copied) {
+          setIsPackageCopied(true)
+          toast.success("✨ Azure OpenAI generated & copied complete package to clipboard!", { id: "ai-pkg" })
+          setTimeout(() => setIsPackageCopied(false), 3000)
+        } else {
+          toast.success("✨ Generated complete package! Click 'Copy Complete Package' to copy.", { id: "ai-pkg" })
+        }
+      }
+    } catch (err: any) {
+      console.error("AI Package Error:", err)
+      toast.error(err.message || "Failed to generate package via Azure OpenAI", { id: "ai-pkg" })
+    } finally {
+      setIsAiPackageLoading(false)
+    }
+  }
+
+  // Action 2: Regenerate Single Category via Azure OpenAI
+  const handleRegenerateSingleAi = async (cat: CategoryType) => {
+    const web = targetWebsite.trim() || "TARGET_WEBSITE"
+    const auth = targetAuthor.trim() || "TARGET_AUTHOR"
+
+    setLoadingCategories((prev) => ({ ...prev, [cat]: true }))
+    toast.loading(`Azure OpenAI regenerating ${cat}...`, { id: `ai-${cat}` })
+
+    try {
+      const res = await fetch("/api/generate-ai-template", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: cat,
+          website: web,
+          author: auth,
+          tone: aiTone,
+          customInstruction: customAiPrompt.trim(),
+          baseText: aiPackage[cat] || undefined
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "AI generation failed")
+      }
+
+      if (data.resultText) {
+        setAiPackage((prev) => ({ ...prev, [cat]: data.resultText }))
+        setEngineMode("ai")
+        toast.success(`✨ Regenerated ${cat} with Azure OpenAI!`, { id: `ai-${cat}` })
+      }
+    } catch (err: any) {
+      console.error(`AI single category error [${cat}]:`, err)
+      toast.error(err.message || "Failed to generate AI section", { id: `ai-${cat}` })
+    } finally {
+      setLoadingCategories((prev) => ({ ...prev, [cat]: false }))
+    }
+  }
+
+  // Action 3: Randomize Single Preset Variation
+  const handleShufflePresetCategory = (cat: CategoryType) => {
+    const currentVal = variationMap[cat] || 0
+    let nextVal = Math.floor(Math.random() * 5)
+    if (nextVal === currentVal) nextVal = (nextVal + 1) % 5
+    setVariationMap((prev) => ({ ...prev, [cat]: nextVal }))
+    toast.info(`Switched ${cat} to Preset Variation #${nextVal + 1}`, { icon: "🔀" })
+  }
+
+  // Action 4: Shuffle All Presets
+  const handleShuffleAllPresets = async () => {
     const newMap: Record<CategoryType, number> = {
       "Author Box Title": Math.floor(Math.random() * 5),
       "Author Box Content": Math.floor(Math.random() * 5),
@@ -407,8 +541,8 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
       "Footer Notice": Math.floor(Math.random() * 5)
     }
     setVariationMap(newMap)
+    setEngineMode("preset")
 
-    // Build complete package text with current targetWebsite & targetAuthor
     const categories: CategoryType[] = [
       "Author Box Title",
       "Author Box Content",
@@ -419,45 +553,25 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
 
     const fullSuiteText = categories
       .map((cat) => {
-        const item = getCategoryText(cat, newMap[cat])
-        return `=== ${cat.toUpperCase()} (Variation #${item.variationNumber}) ===\n${item.text}`
+        const templates = allTemplates.filter((t) => t.category === cat)
+        const template = templates[newMap[cat]] || templates[0]
+        const text = template.contentText(targetWebsite || "Website", targetAuthor || "Author")
+        return `=== ${cat.toUpperCase()} (Variation #${template.variationNumber}) ===\n${text}`
       })
       .join("\n\n--------------------------------------------------\n\n")
 
-    // Automatically copy to clipboard
-    navigator.clipboard.writeText(fullSuiteText)
-    setIsPackageCopied(true)
-    toast.success("⚡ Generated & Copied Complete Package to Clipboard! Ready to paste.", {
-      icon: "📋"
-    })
-
-    setTimeout(() => setIsPackageCopied(false), 2500)
-  }
-
-  // Randomize a single category variation
-  const handleRandomizeSingleCategory = (cat: CategoryType) => {
-    const currentVal = variationMap[cat] || 0
-    let nextVal = Math.floor(Math.random() * 5)
-    if (nextVal === currentVal) nextVal = (nextVal + 1) % 5
-    setVariationMap((prev) => ({ ...prev, [cat]: nextVal }))
-    toast.info(`Randomized ${cat} (Loaded Variation #${nextVal + 1})`, { icon: "🔀" })
-  }
-
-  // Get generated text for any category and variation index
-  const getCategoryText = (cat: CategoryType, varIdx: number) => {
-    const templates = allTemplates.filter((t) => t.category === cat)
-    const template = templates[varIdx] || templates[0]
-    const web = targetWebsite.trim() || "TARGET_WEBSITE"
-    const auth = targetAuthor.trim() || "TARGET_AUTHOR"
-    return {
-      templateName: template.name,
-      variationNumber: template.variationNumber,
-      text: template.contentText(web, auth)
+    const copied = await safeCopyToClipboard(fullSuiteText)
+    if (copied) {
+      setIsPackageCopied(true)
+      toast.success("Loaded & Copied Preset Templates Package!", { icon: "📋" })
+      setTimeout(() => setIsPackageCopied(false), 2500)
+    } else {
+      toast.info("Loaded Preset Templates Package!")
     }
   }
 
-  // Copy full generated suite to clipboard
-  const handleCopyFullSuite = () => {
+  // Action 5: Copy Full Package
+  const handleCopyFullPackage = async () => {
     const categories: CategoryType[] = [
       "Author Box Title",
       "Author Box Content",
@@ -466,75 +580,23 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
       "Footer Notice"
     ]
 
-    const fullSuiteText = categories
+    const fullText = categories
       .map((cat) => {
-        const item = getCategoryText(cat, variationMap[cat] || 0)
-        return `=== ${cat.toUpperCase()} (Variation #${item.variationNumber}) ===\n${item.text}`
+        const display = getCategoryDisplay(cat)
+        return `=== ${cat.toUpperCase()} (${display.variationLabel}) ===\n${display.text}`
       })
       .join("\n\n--------------------------------------------------\n\n")
 
-    navigator.clipboard.writeText(fullSuiteText)
-    toast.success("Copied complete 5-section content package to clipboard!")
-  }
-
-  // Unified Single Handler: Generate & Shuffle Template
-  const handleGenerateAndShuffle = () => {
-    handleGenerateAllRandomized()
-  }
-
-  // Shuffle Alias for compatibility
-  const handleShuffle = handleGenerateAndShuffle
-
-  // Copy Direct Text to Clipboard
-  const handleCopyText = (textToCopy?: string) => {
-    const text = textToCopy || (viewTab === "ai" && aiGeneratedText ? aiGeneratedText : generatedText)
-    navigator.clipboard.writeText(text)
-    setCopiedText(true)
-    toast.success("Text copied to clipboard! Ready to paste.")
-    setTimeout(() => setCopiedText(false), 2000)
-  }
-
-  // Call Azure OpenAI API Route
-  const handleGenerateAi = async (mode: "rewrite" | "new" = "rewrite") => {
-    const web = targetWebsite.trim() || "TARGET_WEBSITE"
-    const auth = targetAuthor.trim() || "TARGET_AUTHOR"
-
-    setIsAiLoading(true)
-    setViewTab("ai")
-    toast.loading("Communicating with Azure OpenAI (gpt-5.4-nano)...", { id: "azure-ai" })
-
-    try {
-      const res = await fetch("/api/generate-ai-template", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category: activeCategory,
-          website: web,
-          author: auth,
-          customInstruction: customAiPrompt.trim(),
-          baseText: mode === "rewrite" ? generatedText : undefined
-        })
-      })
-
-      const data = await res.json()
-
-      if (!res.ok || data.error) {
-        throw new Error(data.error || "Failed to generate AI template")
-      }
-
-      setAiGeneratedText(data.resultText)
-      setAiModelUsed(data.modelUsed || "gpt-5.4-nano")
-      toast.success("✨ Generated template using Azure OpenAI!", { id: "azure-ai" })
-    } catch (err: any) {
-      console.error("AI Generation Error:", err)
-      toast.error(err.message || "Failed to connect to Azure OpenAI", { id: "azure-ai" })
-    } finally {
-      setIsAiLoading(false)
+    const copied = await safeCopyToClipboard(fullText)
+    if (copied) {
+      toast.success("Copied complete 5-section content package to clipboard!")
+    } else {
+      toast.error("Clipboard copy failed. Please select text manually.")
     }
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in-50 duration-300">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in-50 duration-300 pb-12">
       <Toaster position="top-right" />
 
       {/* Navigation Header */}
@@ -550,45 +612,61 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
             <IconTemplate className="size-6 text-sky-500" /> Website Content Template Switcher
           </h2>
           <p className="text-xs text-muted-foreground">
-            Enter Website Name and Author to generate ready-to-paste website content. Shuffle or select variations for a different template every time.
+            Generate context-aware, high-converting website content using Azure OpenAI (<span className="font-semibold text-sky-400">gpt-5.4-nano</span>) or fast preset variations.
           </p>
         </div>
 
-        {/* Unified Single Action: Generate & Shuffle Template */}
-        <div className="flex items-center gap-2">
+        {/* AI Engine Status Badge & Mode Selector */}
+        <div className="flex items-center gap-2 bg-muted/60 border border-border p-1.5 rounded-xl shrink-0">
           <button
-            onClick={handleGenerateAndShuffle}
-            className="px-5 py-2.5 text-xs font-extrabold bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white rounded-xl shadow-md shadow-sky-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
+            onClick={() => setEngineMode("ai")}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+              engineMode === "ai"
+                ? "bg-sky-500 text-white shadow-sm shadow-sky-500/30"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
           >
-            <IconArrowsShuffle className="size-4 stroke-[2.5]" />
-            <span>Generate & Shuffle Template</span>
+            <IconRobot className="size-4" />
+            <span>🤖 AI Mode (Azure OpenAI)</span>
+          </button>
+
+          <button
+            onClick={() => setEngineMode("preset")}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+              engineMode === "preset"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <IconFileText className="size-4" />
+            <span>📋 Preset Templates</span>
           </button>
         </div>
       </div>
 
-      {/* INPUT VARIABLES GRID (Target Website & Target Author) */}
+      {/* INPUT VARIABLES GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Target Website Name */}
         <div className="bg-card border border-border rounded-xl p-4 space-y-1.5 shadow-sm">
           <label className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide">
-            <IconWorld className="size-4 text-sky-500" /> Website Name
+            <IconWorld className="size-4 text-sky-500" /> Target Website Name
           </label>
           <input
             type="text"
             value={targetWebsite}
             onChange={(e) => setTargetWebsite(e.target.value)}
-            placeholder="e.g. FMC4ME"
+            placeholder="e.g. NMLS, FMC4ME, etc."
             className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500"
           />
           <span className="text-[10px] text-muted-foreground block">
-            Target website name (e.g., FMC4ME)
+            AI will analyze this website name to generate topic-relevant copy.
           </span>
         </div>
 
         {/* Target Author Name */}
         <div className="bg-card border border-border rounded-xl p-4 space-y-1.5 shadow-sm">
           <label className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide">
-            <IconUser className="size-4 text-sky-500" /> Author Name
+            <IconUser className="size-4 text-sky-500" /> Target Author Name
           </label>
           <input
             type="text"
@@ -598,43 +676,103 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
             className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500"
           />
           <span className="text-[10px] text-muted-foreground block">
-            Author name to insert into content (e.g., Daniel Rodriguez)
+            Author name to feature in Author Box and Footer credits.
           </span>
         </div>
       </div>
 
-      {/* GENERATE ALL CATEGORIES PRIMARY ACTION BAR */}
-      <div className="bg-card border border-sky-500/30 bg-gradient-to-r from-sky-500/10 to-indigo-500/10 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+      {/* AI TONE & CUSTOM INSTRUCTIONS BAR */}
+      <div className="bg-card border border-border/80 rounded-xl p-4 space-y-3 shadow-sm">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-extrabold text-foreground flex items-center gap-1.5 uppercase tracking-wide">
+            <IconAdjustmentsHorizontal className="size-4 text-sky-500" /> AI Generation Settings
+          </label>
+
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-semibold">
+            <IconCpu className="size-3.5 text-emerald-500" />
+            <span>Connected: Azure OpenAI (gpt-5.4-nano)</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Tone Dropdown */}
+          <div className="space-y-1">
+            <span className="text-[11px] font-bold text-muted-foreground block">Desired Content Tone</span>
+            <select
+              value={aiTone}
+              onChange={(e) => setAiTone(e.target.value)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500"
+            >
+              <option value="Professional & Clear">Professional & Clear</option>
+              <option value="Friendly & Approachable">Friendly & Approachable</option>
+              <option value="Authoritative & Informative">Authoritative & Informative</option>
+              <option value="Concise & Direct">Concise & Direct</option>
+            </select>
+          </div>
+
+          {/* Custom Instruction Input */}
+          <div className="md:col-span-2 space-y-1">
+            <span className="text-[11px] font-bold text-muted-foreground block">Optional Custom AI Instructions</span>
+            <input
+              type="text"
+              value={customAiPrompt}
+              onChange={(e) => setCustomAiPrompt(e.target.value)}
+              placeholder="e.g. Focus on licensing guidelines, keep disclaimer strictly legal..."
+              className="w-full rounded-lg border border-border bg-background px-3.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* PRIMARY ACTION BAR */}
+      <div className="bg-card border border-sky-500/30 bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-sky-500/10 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
         <div className="space-y-1 text-center sm:text-left">
           <h3 className="text-base font-extrabold text-foreground tracking-tight flex items-center justify-center sm:justify-start gap-2">
             <IconSparkles className="size-5 text-sky-500 animate-pulse" />
             Generate Complete Website Package
           </h3>
           <p className="text-xs text-muted-foreground">
-            Instantly generates ready-to-paste text for all 5 content categories using randomized template variations for <span className="font-semibold text-foreground">{targetWebsite.trim() || "Website"}</span> and <span className="font-semibold text-foreground">{targetAuthor.trim() || "Author"}</span>.
+            Instantly generates ready-to-paste text for all 5 content categories tailored specifically for{" "}
+            <span className="font-semibold text-foreground">{targetWebsite.trim() || "Website"}</span> and{" "}
+            <span className="font-semibold text-foreground">{targetAuthor.trim() || "Author"}</span>.
           </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
           <button
-            onClick={handleGenerateAllRandomized}
+            onClick={handleGenerateAiPackage}
+            disabled={isAiPackageLoading}
             className={`w-full sm:w-auto px-5 py-3 text-xs font-extrabold rounded-xl shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 ${
               isPackageCopied
                 ? "bg-emerald-600 text-white shadow-emerald-500/25"
                 : "bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white shadow-sky-500/25"
-            }`}
+            } ${isAiPackageLoading ? "opacity-75 cursor-not-allowed" : ""}`}
           >
-            {isPackageCopied ? (
+            {isAiPackageLoading ? (
+              <>
+                <IconLoader2 className="size-4 animate-spin" />
+                <span>Generating with Azure OpenAI...</span>
+              </>
+            ) : isPackageCopied ? (
               <>
                 <IconCheck className="size-4 stroke-[3]" />
-                <span>Copied Package! Ready to Paste 📋</span>
+                <span>Copied AI Package! Ready to Paste 📋</span>
               </>
             ) : (
               <>
-                <IconArrowsShuffle className="size-4 stroke-[2.5]" />
-                <span>⚡ Generate & Copy All Categories</span>
+                <IconWand className="size-4 stroke-[2.5]" />
+                <span>✨ Generate Package via Azure OpenAI</span>
               </>
             )}
+          </button>
+
+          <button
+            onClick={handleShuffleAllPresets}
+            className="px-3.5 py-3 text-xs font-bold bg-muted hover:bg-accent text-foreground rounded-xl border border-border transition-colors flex items-center gap-1.5"
+            title="Load Offline Preset Variation"
+          >
+            <IconArrowsShuffle className="size-4 text-indigo-500" />
+            <span className="hidden md:inline">Preset Shuffle</span>
           </button>
         </div>
       </div>
@@ -648,12 +786,17 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
               Generated Website Package (All 5 Categories)
             </h3>
             <p className="text-[11px] text-muted-foreground">
-              Randomized variations compiled for <span className="font-semibold text-foreground">{targetWebsite || "Website"}</span> & <span className="font-semibold text-foreground">{targetAuthor || "Author"}</span>
+              Mode:{" "}
+              <span className="font-semibold text-foreground">
+                {engineMode === "ai" ? "🤖 Azure OpenAI (gpt-5.4-nano)" : "📋 Preset Variations"}
+              </span>{" "}
+              for <span className="font-semibold text-foreground">{targetWebsite || "Website"}</span> &{" "}
+              <span className="font-semibold text-foreground">{targetAuthor || "Author"}</span>
             </p>
           </div>
 
           <button
-            onClick={handleCopyFullSuite}
+            onClick={handleCopyFullPackage}
             className="px-3.5 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
           >
             <IconCopy className="size-3.5" />
@@ -671,35 +814,65 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
               "Footer Notice"
             ] as CategoryType[]
           ).map((cat) => {
-            const varIdx = variationMap[cat] || 0
-            const item = getCategoryText(cat, varIdx)
+            const display = getCategoryDisplay(cat)
+            const isLoading = loadingCategories[cat]
 
             return (
-              <div key={cat} className="bg-muted/40 border border-border/80 rounded-xl p-4 space-y-2 hover:border-sky-500/30 transition-colors">
-                <div className="flex items-center justify-between">
+              <div
+                key={cat}
+                className="bg-muted/40 border border-border/80 rounded-xl p-4 space-y-2 hover:border-sky-500/30 transition-colors"
+              >
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-foreground">{cat}</span>
-                    <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                      Variation #{item.variationNumber}
+                    <span
+                      className={`text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border ${
+                        display.isAi
+                          ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
+                          : "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+                      }`}
+                    >
+                      {display.variationLabel}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1.5">
+                    {/* Azure OpenAI Regenerate Button */}
                     <button
-                      onClick={() => handleRandomizeSingleCategory(cat)}
-                      className="px-2.5 py-1 text-[11px] font-semibold bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded border border-border/60 transition-colors flex items-center gap-1"
-                      title="Randomize this variation"
+                      onClick={() => handleRegenerateSingleAi(cat)}
+                      disabled={isLoading}
+                      className="px-2.5 py-1 text-[11px] font-bold bg-sky-500/10 text-sky-400 hover:bg-sky-500 hover:text-white rounded border border-sky-500/20 transition-all flex items-center gap-1 disabled:opacity-50"
+                      title="Regenerate this specific category using Azure OpenAI"
                     >
-                      <IconArrowsShuffle className="size-3 text-sky-500" />
-                      <span>Shuffle</span>
+                      {isLoading ? (
+                        <IconLoader2 className="size-3 animate-spin" />
+                      ) : (
+                        <IconSparkles className="size-3 text-sky-400" />
+                      )}
+                      <span>AI Re-roll</span>
                     </button>
 
+                    {/* Shuffle Preset Button */}
                     <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(item.text)
-                        toast.success(`Copied ${cat}!`)
+                      onClick={() => handleShufflePresetCategory(cat)}
+                      className="px-2.5 py-1 text-[11px] font-semibold bg-muted hover:bg-accent text-muted-foreground hover:text-foreground rounded border border-border/60 transition-colors flex items-center gap-1"
+                      title="Switch to next preset template variation"
+                    >
+                      <IconArrowsShuffle className="size-3 text-indigo-400" />
+                      <span>Preset</span>
+                    </button>
+
+                    {/* Copy Button */}
+                    <button
+                      onClick={async () => {
+                        const success = await safeCopyToClipboard(display.text)
+                        if (success) {
+                          toast.success(`Copied ${cat}!`)
+                        } else {
+                          toast.error(`Failed to copy ${cat}.`)
+                        }
                       }}
-                      className="px-2.5 py-1 text-[11px] font-bold bg-sky-500/10 text-sky-500 hover:bg-sky-500 hover:text-white rounded border border-sky-500/20 transition-all flex items-center gap-1"
+                      className="px-2.5 py-1 text-[11px] font-bold bg-emerald-600/10 text-emerald-500 hover:bg-emerald-600 hover:text-white rounded border border-emerald-500/20 transition-all flex items-center gap-1"
                     >
                       <IconCopy className="size-3" />
                       <span>Copy</span>
@@ -707,15 +880,20 @@ This site does not offer professional, legal, tax, or financial advice. Users mu
                   </div>
                 </div>
 
-                <div className="font-mono text-xs text-foreground bg-background/80 border border-border/50 rounded-lg p-3 whitespace-pre-wrap leading-relaxed">
-                  {item.text}
+                <div className="font-mono text-xs text-foreground bg-background/80 border border-border/50 rounded-lg p-3 whitespace-pre-wrap leading-relaxed relative">
+                  {isLoading && (
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px] rounded-lg flex items-center justify-center gap-2 text-xs font-bold text-sky-400">
+                      <IconLoader2 className="size-4 animate-spin" />
+                      Generating with Azure OpenAI...
+                    </div>
+                  )}
+                  {display.text}
                 </div>
               </div>
             )
           })}
         </div>
       </div>
-
     </div>
   )
 }
